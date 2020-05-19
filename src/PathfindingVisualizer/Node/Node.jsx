@@ -8,10 +8,10 @@ export const DEFAULT_NODE = {
 }
 
 const Node = props => {
-  const { isStart, isEnd } = props
+  const { isStart, isEnd, isVisited } = props
   const { nodeState, updateState } = useState({})
 
-  const specialNodeClass = isEnd ? 'node-end' : isStart ? 'node-start' : ''
+  const specialNodeClass = isEnd ? 'node-end' : isStart ? 'node-start' : isVisited ? 'node-visited' : ''
 
 
   return <div className={`node ${specialNodeClass}`}></div>
