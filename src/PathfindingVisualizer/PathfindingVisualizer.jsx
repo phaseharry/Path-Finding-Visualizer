@@ -16,41 +16,57 @@ const END_NODE = {
 }
 
 const defaultState = {
-  grid: []
+  grid: [[]],
+  mouseIsPressed: false
 }
 
 const PathfindingVisualizer = () => {
-  const [state, updateState] = useState(defaultState)
-
+  const [grid, updateGrid] = useState(defaultState.grid)
+  const [mouseIsPressed, updateMouse] = useState(defaultState.mouseIsPressed)
   // componentDidMount
   useEffect(() => {
-    updateState({ grid: getInitialGrid() })
-    console.log('componentdidmount')
+    updateGrid(getInitialGrid())
   }, [])
 
   const animateDijkstra = (visitedNodesInOrder) => {
     for(let i = 0; i < visitedNodesInOrder.length; i++){
       setTimeout(() => {
         const node = visitedNodesInOrder[i]
-        const newGrid = state.grid.slice() // getting a copy of the entire grid
+        const newGrid = grid.slice() // getting a copy of the entire grid
         const newNode = {
           ...node,
           isVisited: true
         }
         newGrid[node.row][node.col] = newNode
        
-        updateState({ grid: newGrid })
-      }, 10 * i)
+        updateGrid(newGrid)
+      }, 50 * i)
     }
   }
 
   const visualizeDijkstra = () => {
-    const { grid } = state
     const startNode = grid[START_NODE.row][START_NODE.col]
     const endNode = grid[END_NODE.row][END_NODE.col]
     const visitedNodesInOrder = dijkstra(grid, startNode, endNode)
     //console.log(visitedNodesInOrder)
     animateDijkstra(visitedNodesInOrder)
+  }
+
+  // handles the initial mouse down and setting state to true so continually hovering over nodes with mouse pressed will make 'walls'
+  const handleMouseDown = (row, col) => {
+    const newGrid = getNewGridWallToggled(grid, row, col)
+    updateGrid(newGrid)
+    updateMouse(true)
+  }
+  
+  const handleMouseEnter = (row, col) => {
+    if(!mouseIsPressed) return // breakout of function if mouse is not pressed
+    const newGrid = getNewGridWallToggled(grid, row, col)
+    updateGrid(newGrid)
+  }
+  
+  const handleMouseUp = () => {
+    updateMouse(false)
   }
 
   return (
@@ -59,12 +75,25 @@ const PathfindingVisualizer = () => {
         Visualize Dijkstra's Algorithm
       </button>
       <div className='grid'>
-        { state.grid.map((row, rowIdx) => {
+        { grid.map((row, rowIdx) => {
           return (
             <div key={rowIdx}>
               {row.map((node, nodeIdx) => {
-                const { isStart, isEnd, isVisited } = node
-                return <Node key={nodeIdx} isStart={isStart} isEnd={isEnd} isVisited={isVisited} />
+                const { isStart, isEnd, isVisited, isWall } = node
+                return (
+                  <Node 
+                    key={nodeIdx} 
+                    isStart={isStart} 
+                    isEnd={isEnd} 
+                    isVisited={isVisited}  
+                    isWall={isWall}
+                    handleMouseDown={handleMouseDown} 
+                    handleMouseEnter={handleMouseEnter} 
+                    handleMouseUp={handleMouseUp}
+                    row={rowIdx}
+                    col={nodeIdx}
+                  />
+                )
               })}
             </div>
           )
@@ -97,6 +126,17 @@ const createNode = (row, col) => {
     isWall: false,
     previousNode: null
   }
+}
+
+const getNewGridWallToggled = (grid, row, col) => {
+  const newGrid = grid.slice()
+  const node = newGrid[row][col]
+  const newNode = {
+    ...node,
+    isWall: !node.isWall
+  }
+  newGrid[row][col] = newNode
+  return newGrid
 }
 
 export default PathfindingVisualizer

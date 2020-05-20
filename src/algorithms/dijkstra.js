@@ -1,17 +1,22 @@
 const dijkstra = (grid, startNode, endNode) => {
   const visitedNodesInOrder = []
-  //if(!startNode || !endNode || startNode === endNode) return false // edge case for when there is no startNode or endNode or if both are the same node
+  if(!startNode || !endNode || startNode === endNode) return false // edge case for when there is no startNode or endNode or if both are the same node
 
   startNode.distance = 0
   const unvisitedNodes = getAllNodes(grid);
  // console.log(unvisitedNodes)
 
   while(!!unvisitedNodes.length){
-    //debugger
     sortNodesByDistance(unvisitedNodes)
 
+    // nodes are getting passed by reference from state for some reason and it can be mutated outside of the setState function. Need to look into why
+    const closestNode = unvisitedNodes.shift() 
+    // if the closestNode is a wall, dont mark it as visited or add it to the visitedNodesInOrder array
+    if(closestNode.isWall) continue 
+    // if the closestNode.distance is Infinity then that means there is no way to get to the endNode (perhaps the startNode is surrounded by walls)
+    if(closestNode.distance === Infinity) break
 
-    const closestNode = unvisitedNodes.shift() // nodes are getting passed by reference from state for some reason and it can be mutated outside of the setState function. Need to look into why
+
     const copy = { ...closestNode }
     //closestNode.isVisited = true
     copy.isVisited = true
