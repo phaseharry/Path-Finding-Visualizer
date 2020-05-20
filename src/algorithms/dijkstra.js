@@ -1,61 +1,66 @@
-const dijkstra = (grid, startNode, endNode) => {
-  const visitedNodesInOrder = []
-  if(!startNode || !endNode || startNode === endNode) return false // edge case for when there is no startNode or endNode or if both are the same node
-
-  startNode.distance = 0
+// Performs Dijkstra's algorithm; returns *all* nodes in the order
+// in which they were visited. Also makes nodes point back to their
+// previous node, effectively allowing us to compute the shortest path
+// by backtracking from the finish node.
+export function dijkstra(grid, startNode, finishNode) {
+  const visitedNodesInOrder = [];
+  startNode.distance = 0;
   const unvisitedNodes = getAllNodes(grid);
- // console.log(unvisitedNodes)
-
-  while(!!unvisitedNodes.length){
-    sortNodesByDistance(unvisitedNodes)
-
-    // nodes are getting passed by reference from state for some reason and it can be mutated outside of the setState function. Need to look into why
-    const closestNode = unvisitedNodes.shift() 
-    // if the closestNode is a wall, dont mark it as visited or add it to the visitedNodesInOrder array
-    if(closestNode.isWall) continue 
-    // if the closestNode.distance is Infinity then that means there is no way to get to the endNode (perhaps the startNode is surrounded by walls)
-    if(closestNode.distance === Infinity) break
-
-
-    const copy = { ...closestNode }
-    //closestNode.isVisited = true
-    copy.isVisited = true
-    visitedNodesInOrder.push(copy)
-    if(closestNode === endNode) return visitedNodesInOrder
-    updateNeighbors(closestNode, grid)
+  while (!!unvisitedNodes.length) {
+    sortNodesByDistance(unvisitedNodes);
+    const closestNode = unvisitedNodes.shift();
+    // If we encounter a wall, we skip it.
+    if (closestNode.isWall) continue;
+    // If the closest node is at a distance of infinity,
+    // we must be trapped and should therefore stop.
+    if (closestNode.distance === Infinity) return visitedNodesInOrder;
+    closestNode.isVisited = true;
+    visitedNodesInOrder.push(closestNode);
+    if (closestNode === finishNode) return visitedNodesInOrder;
+    updateUnvisitedNeighbors(closestNode, grid);
   }
-  return visitedNodesInOrder
 }
 
-const sortNodesByDistance = (unvisitedNodes) => {
-  unvisitedNodes.sort((nodeA, nodeB) => nodeA.distance - nodeB.distance)
+function sortNodesByDistance(unvisitedNodes) {
+  unvisitedNodes.sort((nodeA, nodeB) => nodeA.distance - nodeB.distance);
 }
 
-const updateNeighbors = (node, grid) => {
- const neighbors = getNeighbors(node, grid)
- for(const neighbor of neighbors){
-   neighbor.distance = node.distance + 1
- }
+function updateUnvisitedNeighbors(node, grid) {
+  const unvisitedNeighbors = getUnvisitedNeighbors(node, grid);
+  for (const neighbor of unvisitedNeighbors) {
+    neighbor.distance = node.distance + 1;
+    neighbor.previousNode = node;
+  }
 }
 
-const getNeighbors = (node, grid) => {
-  const neighbors = []
-  const { col, row } = node
-  if(row > 0) neighbors.push(grid[row - 1][col])
-  if(row < grid.length - 1) neighbors.push(grid[row + 1][col])
-  if(col > 0) neighbors.push(grid[row][col - 1])
-  if(col < grid[0].length - 1) neighbors.push(grid[row][col + 1])
-  return neighbors
+function getUnvisitedNeighbors(node, grid) {
+  const neighbors = [];
+  const {col, row} = node;
+  if (row > 0) neighbors.push(grid[row - 1][col]);
+  if (row < grid.length - 1) neighbors.push(grid[row + 1][col]);
+  if (col > 0) neighbors.push(grid[row][col - 1]);
+  if (col < grid[0].length - 1) neighbors.push(grid[row][col + 1]);
+  return neighbors.filter(neighbor => !neighbor.isVisited);
 }
 
-const getAllNodes = grid => {
-  const nodes = []
-  for(const row of grid){
-    for(const node of row){
-      nodes.push(node)
+function getAllNodes(grid) {
+  const nodes = [];
+  for (const row of grid) {
+    for (const node of row) {
+      nodes.push(node);
     }
   }
-  return nodes
+  return nodes;
 }
 
-export default dijkstra
+// Backtracks from the finishNode to find the shortest path.
+// Only works when called *after* the dijkstra method above.
+export function getNodesInShortestPathOrder(finishNode) {
+  const nodesInShortestPathOrder = [];
+  let currentNode = finishNode;
+  while (currentNode !== null) {
+    nodesInShortestPathOrder.unshift(currentNode);
+    currentNode = currentNode.previousNode;
+  }
+  return nodesInShortestPathOrder;
+}

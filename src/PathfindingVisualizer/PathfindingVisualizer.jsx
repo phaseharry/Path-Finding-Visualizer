@@ -3,7 +3,7 @@ import React, { useState, useEffect, Fragment } from 'react'
 import './PathfindingVisualizer.css'
 import Node from './Node/Node'
 
-import dijkstra from '../algorithms/dijkstra'
+import { dijkstra, getNodesInShortestPathOrder } from '../algorithms/dijkstra'
 
 const START_NODE = {
   row: 10,
@@ -16,7 +16,7 @@ const END_NODE = {
 }
 
 const defaultState = {
-  grid: [[]],
+  grid: [],
   mouseIsPressed: false
 }
 
@@ -27,9 +27,15 @@ const PathfindingVisualizer = () => {
   useEffect(() => {
     updateGrid(getInitialGrid())
   }, [])
-
-  const animateDijkstra = (visitedNodesInOrder) => {
-    for(let i = 0; i < visitedNodesInOrder.length; i++){
+  
+  const animateDijkstra = (visitedNodesInOrder, nodesInShortestPathOrder) => {
+    for(let i = 0; i <= visitedNodesInOrder.length; i++){
+      if(i === visitedNodesInOrder.length){
+        setTimeout(() => {
+          animateShortestPath(nodesInShortestPathOrder)
+        }, 50 * i)
+          return
+      }
       setTimeout(() => {
         const node = visitedNodesInOrder[i]
         const newGrid = grid.slice() // getting a copy of the entire grid
@@ -44,12 +50,25 @@ const PathfindingVisualizer = () => {
     }
   }
 
+  const animateShortestPath = nodesInShortestPathOrder => {
+    for(let i = 0; i < nodesInShortestPathOrder.length; i++){
+      setTimeout(() => {
+        const node = nodesInShortestPathOrder[i]
+        node.isShortestPath = true
+        const gridCopy = grid.slice()
+        gridCopy[node.row][node.col] = node
+        updateGrid(gridCopy)
+      }, 50 * i)
+    }
+  }
+
   const visualizeDijkstra = () => {
-    const startNode = grid[START_NODE.row][START_NODE.col]
-    const endNode = grid[END_NODE.row][END_NODE.col]
-    const visitedNodesInOrder = dijkstra(grid, startNode, endNode)
-    //console.log(visitedNodesInOrder)
-    animateDijkstra(visitedNodesInOrder)
+    const gridCopy = hardcopyGrid(grid)
+    const startNode = gridCopy[START_NODE.row][START_NODE.col]
+    const endNode = gridCopy[END_NODE.row][END_NODE.col]
+    const visitedNodesInOrder = dijkstra(gridCopy, startNode, endNode)
+    const nodesInShortestPathOrder = getNodesInShortestPathOrder(endNode)
+    animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder)
   }
 
   // handles the initial mouse down and setting state to true so continually hovering over nodes with mouse pressed will make 'walls'
@@ -79,7 +98,7 @@ const PathfindingVisualizer = () => {
           return (
             <div key={rowIdx}>
               {row.map((node, nodeIdx) => {
-                const { isStart, isEnd, isVisited, isWall } = node
+                const { isStart, isEnd, isVisited, isShortestPath, isWall } = node
                 return (
                   <Node 
                     key={nodeIdx} 
@@ -87,6 +106,7 @@ const PathfindingVisualizer = () => {
                     isEnd={isEnd} 
                     isVisited={isVisited}  
                     isWall={isWall}
+                    isShortestPath={isShortestPath}
                     handleMouseDown={handleMouseDown} 
                     handleMouseEnter={handleMouseEnter} 
                     handleMouseUp={handleMouseUp}
@@ -101,6 +121,16 @@ const PathfindingVisualizer = () => {
       </div>
     </Fragment>
   )
+}
+
+const hardcopyGrid = grid => {
+  const gridCopy = JSON.parse(JSON.stringify(grid)) // need to do a hardcopy of the state so we don't modify the nodes dijkstra's is still running
+  for(let row = 0; row < gridCopy.length; row++){
+    for(let col = 0; col < gridCopy[row].length; col++){
+      gridCopy[row][col].distance = Infinity // Infinity gets set to null when you stringify and then parse it
+    }
+  }
+  return gridCopy
 }
 
 const getInitialGrid = () => {
@@ -124,6 +154,7 @@ const createNode = (row, col) => {
     distance: Infinity,
     isVisited: false,
     isWall: false,
+    isShortestPath: false,
     previousNode: null
   }
 }
@@ -138,5 +169,6 @@ const getNewGridWallToggled = (grid, row, col) => {
   newGrid[row][col] = newNode
   return newGrid
 }
+
 
 export default PathfindingVisualizer
